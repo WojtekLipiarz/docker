@@ -66,3 +66,44 @@ CMD ["node", "server.js"]
 | `CMD`      | podczas **uruchamiania kontenera** | uruchamia domyślny proces                              | ✅ Tak                   |
 
 ---
+
+## 4. Optymalizacja budowania obrazu
+
+**Cel:** skrócenie czasu budowy obrazu poprzez efektywne wykorzystanie cache warstw Dockera.
+
+### 🧱 Zasada:
+
+Umieszczaj instrukcje, które rzadko się zmieniają (np. instalacja zależności), jak najwyżej w Dockerfile.  
+Dzięki temu Docker może wykorzystać cache przy kolejnych budowach.
+
+### 💡 Przykład (Node.js):
+
+```Dockerfile
+# 1. Ustaw katalog roboczy
+WORKDIR /app
+
+# 2. Skopiuj pliki definiujące zależności
+COPY package*.json ./app
+
+# 3. Zainstaluj zależności
+RUN npm install
+
+# 4. Skopiuj resztę plików aplikacji
+COPY . .
+
+EXPOSE 80
+
+CMD ["node", "server.js"]
+```
+
+### 🔍 Dlaczego to działa:
+
+- Docker tworzy warstwy (layers) dla każdej instrukcji.
+- Jeśli **`package.json`** i **`package-lock.json`** się nie zmienią, warstwa z `npm install` zostanie **zcache’owana**.
+- Dzięki temu, przy ponownej budowie, zależności nie będą instalowane od zera — oszczędność czasu i zasobów.
+
+### 🚀 Dodatkowe wskazówki:
+
+- Używaj `COPY package*.json .` zamiast tylko `package.json` — wtedy obsłużysz też `package-lock.json` lub `npm-shrinkwrap.json`.
+- Dla środowisk developerskich można użyć `npm ci` (szybsze, bardziej deterministyczne).
+- W przypadku dużych projektów warto rozważyć **multi-stage build**, aby końcowy obraz był mniejszy.
