@@ -63,3 +63,9 @@ Dzięki temu mozemy uruchomić konkretny image z konkretną wersją
 ```dockerfile
 docker run -p 3000:80 -d --rm --name goalsapp goals:latest
 ```
+
+## 🚀 rename image
+
+```dockerfile
+docker tag node_app:01 wojciechlip/node-hello-world:01
+```
