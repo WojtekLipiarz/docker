@@ -1,0 +1,49 @@
+services:
+  mongodb:
+    image: mongo
+    volumes:
+      - data:/data/db
+    env_file:
+      - ./env/mongo.env
+    # Alternatywnie mozna uzyc environment:
+    # environment:
+    #   - MONGO_INITDB_ROOT_USERNAME=max
+    #   - MONGO_INITDB_ROOT_PASSWORD=secret
+    # =================================================================================================
+    # Network nie jest wymagany bo docker compose automatycznie tworzy network o nazwie docker_default
+    # networks:
+    #   - goals-net
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # environment:
+    #   - MONGODB_USERNAME=max
+    #   - MONGODB_PASSWORD=secret
+    env_file:
+      - ./env/backend.env
+    volumes:
+      - logs:/app/logs
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - 80:80
+    depends_on:
+      # mongodb must be started before backend
+      - mongodb
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend/src:/app/src
+    ports:
+      - 3000:3000
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+# Name volume must be defined here in order to be used in the containers
+volumes:
+  data:
+  logs:
