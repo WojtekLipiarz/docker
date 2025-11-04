@@ -1,12 +1,50 @@
 services:
   server:
-    image: "nginx:stable-alpine"
+    # image: "nginx:stable-alpine"
+    build:
+      # Nie uzywamy context dockerfiles bo wtedy nie ma dostepu do plikow z poziomu hosta
+      # A w nginx.dockerfile mamy komendę COPY src .
+      # Wiec musimy uzyc context .
+      context: .
+      dockerfile: dockerfiles/nginx.dockerfile
     ports:
       - "8000:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-  # php:
-  # mysql:
-  # composer:
-  # artisan:
-  # npm:
+      - ./src:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+      - mysql
+  php:
+    build:
+      context: .
+      dockerfile: dockerfiles/php.dockerfile
+    volumes:
+      # delegated: Kierunek synchronizacji: zmiany w kontenerze są widoczne na hoście z lekkim opóźnieniem (cache)
+      - ./src:/var/www/html:delegated
+    ports:
+      - "3000:3000"
+  mysql:
+    image: mysql:8.0
+    env_file:
+      - ./env/mysql.env
+  # composer is used to install dependencies for the project (laravel)
+  composer:
+    build:
+      context: ./dockerfiles
+      dockerfile: composer.dockerfile
+    volumes:
+      - ./src:/var/www/html
+  artisan:
+    build:
+      context: .
+      dockerfile: /php.dockerfile
+    volumes:
+      - ./src:/var/www/html
+    entrypoint: ["php", "/var/www/html/artisan"]
+  npm:
+    image: node:14
+    working_dir: /var/www/html
+    entrypoint: ["npm"]
+    volumes:
+      - ./src:/var/www/html
